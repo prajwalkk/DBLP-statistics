@@ -48,3 +48,9 @@ Thumbs.db
 *.mov
 *.wmv
 
+/.idea
+*/.idea
+*/target
+*/project/target
+*/project/project
+*/DBLP-statistics/target
