@@ -3,14 +3,24 @@ package com.prajwalkk.hw2.parser
 import java.nio.charset.StandardCharsets
 
 import com.google.common.io.Closeables
-import com.prajwalkk.hw2.parser.XmlInputFormat._
+import com.prajwalkk.hw2.parser.XMLInputFormat.XMLRecordReader
+import com.typesafe.scalalogging.{LazyLogging}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FSDataInputStream, FileSystem, Path}
 import org.apache.hadoop.io.{DataOutputBuffer, LongWritable, Text}
 import org.apache.hadoop.mapreduce.lib.input.{FileSplit, TextInputFormat}
 import org.apache.hadoop.mapreduce.{InputSplit, RecordReader, TaskAttemptContext}
 
-object XmlInputFormat {
+
+class XMLInputFormat extends TextInputFormat with LazyLogging {
+
+
+  override def createRecordReader(split: InputSplit,
+                                  context: TaskAttemptContext): RecordReader[LongWritable, Text] =
+    new XMLRecordReader(split.asInstanceOf[FileSplit], context.getConfiguration)
+
+}
+object XMLInputFormat extends LazyLogging {
 
   val START_TAG_KEY: String = "xmlinput.start"
 
@@ -23,13 +33,13 @@ object XmlInputFormat {
    *
    * Credits @link{github.com/mayankrastogi/faculty-collaboration/}
    */
-  class XmlRecordReader(split: FileSplit, jobConf: Configuration)
+  class XMLRecordReader(split: FileSplit, jobConf: Configuration)
     extends RecordReader[LongWritable, Text] {
 
 
     // Start and end tags of the XML from the job driver in mapreduce
     private val startTag = jobConf.getStrings(START_TAG_KEY).map(_.getBytes(StandardCharsets.UTF_8))
-    private val endTag = jobConf.getStrings(START_TAG_KEY).map(_.getBytes(StandardCharsets.UTF_8))
+    private val endTag = jobConf.getStrings(END_TAG_KEY).map(_.getBytes(StandardCharsets.UTF_8))
     private val startTagToEndTagMapping = startTag.zip(endTag).toMap
 
 
@@ -41,13 +51,13 @@ object XmlInputFormat {
     private val end: Long = start + split.getLength
     private val fsin: FSDataInputStream = fs.open(split.getPath)
 
-
     // Buffer stores intermediate shard content
     private val buffer: DataOutputBuffer = new DataOutputBuffer()
 
-    private var currentKey: LongWritable = new LongWritable()
-    private var currentValue: Text = new Text()
+    private val currentKey: LongWritable = new LongWritable()
+    private val currentValue: Text = new Text()
     private var matchedTag = Array[Byte]()
+
 
     override def initialize(split: InputSplit, context: TaskAttemptContext): Unit = {
       fsin.seek(start)
@@ -61,7 +71,7 @@ object XmlInputFormat {
       if (fsin.getPos < end && readUntilMatch(startTag, false)) {
         try {
           buffer.write(matchedTag)
-          if (readUntilMatch(endTag, true)) {
+          if (readUntilMatch(Array(startTagToEndTagMapping(matchedTag)), true)) {
             key.set(fsin.getPos)
             value.set(buffer.getData, 0, buffer.getLength)
             return true
@@ -73,6 +83,7 @@ object XmlInputFormat {
 
     private def readUntilMatch(tags: Array[Array[Byte]], lookingForEndTag: Boolean): Boolean = {
       val matchCounter: Array[Int] = Array.fill(tags.length)(0)
+
       while (true) {
         // Read a byte from the input stream
         val currentByte = fsin.read()
@@ -126,18 +137,10 @@ object XmlInputFormat {
       Closeables.close(fsin, true)
     }
   }
-
 }
 
 /**
  * Reads records that are delimited by a specifc begin/end tag.
  */
-class XmlInputFormat extends TextInputFormat {
 
-
-  override def createRecordReader(split: InputSplit,
-                                  context: TaskAttemptContext): RecordReader[LongWritable, Text] =
-    new XmlRecordReader(split.asInstanceOf[FileSplit], context.getConfiguration)
-
-}
 

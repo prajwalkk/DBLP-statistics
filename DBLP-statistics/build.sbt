@@ -1,3 +1,5 @@
+import scala.sys.process.Process
+
 name := "DBLP-statistics"
 version := "0.1"
 scalaVersion := "2.13.3"
@@ -31,5 +33,19 @@ libraryDependencies ++= Seq(
 
 )
 
-mainClass in(Compile, run) := Some("com.prajwalkk.hw2.MapReduceJobs.JobDriver")
-mainClass in assembly := Some("com.prajwalkk.hw2.MapReduceJobs.JobDriver")
+mainClass in(Compile, run) := Some("com.prajwalkk.hw2.Utils.JobDriver")
+mainClass in assembly := Some("com.prajwalkk.hw2.Utils.JobDriver")
+
+lazy val deploy = taskKey[Unit]("Deploys Jar to Linux Subsystem")
+
+deploy := {
+  val log = streams.value.log
+  log.info("Startring Copy")
+  val process = Process("wsl ./copy.sh").run(log)
+
+  if(process.exitValue() == 0)
+    log.success("Successful")
+  else{
+    log.error("Failed deploy")
+  }
+}

@@ -1,6 +1,6 @@
 package com.prajwalkk.hw2.Utils
 
-import com.typesafe.config.ConfigFactory
+import com.typesafe.config.{Config, ConfigFactory}
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
@@ -12,7 +12,7 @@ import scala.jdk.CollectionConverters.CollectionHasAsScala
 */
 object ConfigUtils {
   val xmlDetails = ConfigFactory.load("xmltagpair.conf").getConfig("xmltags")
-  val mapredJobDetails = ConfigFactory.load("mapredjobs.conf")
+  val mapredJobDetails = ConfigFactory.load("mapredjobs.conf").getConfig("mapred-pipeline")
 
   def getXMLtags(string: String) =
     string.toLowerCase() match {
@@ -20,5 +20,7 @@ object ConfigUtils {
       case "end" => xmlDetails.getStringList("xml-end-tags").asScala.toList
     }
 
-  def getJobTags() ={}
+  def getJobTags(str: String): Config = {
+    mapredJobDetails.getConfig(str)
+  }
 }

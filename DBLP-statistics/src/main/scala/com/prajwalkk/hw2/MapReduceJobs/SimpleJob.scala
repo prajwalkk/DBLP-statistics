@@ -4,11 +4,9 @@ import java.lang
 import java.util.concurrent.atomic.AtomicInteger
 
 import com.prajwalkk.hw2.Utils.ConfigUtils
-import com.prajwalkk.hw2.parser.XmlInputFormat
+import com.prajwalkk.hw2.parser.XMLInputFormat
 import com.typesafe.scalalogging.LazyLogging
 import javax.xml.parsers.SAXParserFactory
-
-import scala.xml.{Elem, XML}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.io.{IntWritable, LongWritable, Text}
@@ -17,7 +15,7 @@ import org.apache.hadoop.mapreduce.lib.output.{FileOutputFormat, TextOutputForma
 import org.apache.hadoop.mapreduce.{Job, Mapper, Reducer}
 
 import scala.jdk.CollectionConverters.IterableHasAsScala
-import scala.sys.exit
+import scala.xml.{Elem, XML}
 
 /*
 *
@@ -25,19 +23,15 @@ import scala.sys.exit
 * Date: 13-Oct-20
 *
 */
-object JobDriver extends LazyLogging {
+object SimpleJob extends LazyLogging {
 
-
-  def main(args: Array[String]): Unit = {
-    runJob(args(0), args(1))
-  }
 
   @throws[Exception]
   def runJob(input: String, output: String): Unit = {
     val conf = new Configuration
     conf.set("mapreduce.output.textoutputformat.separator", ",")
-    conf.setStrings(XmlInputFormat.START_TAG_KEY, ConfigUtils.getXMLtags("start"): _*)
-    conf.setStrings(XmlInputFormat.END_TAG_KEY, ConfigUtils.getXMLtags("end"): _*)
+    conf.setStrings(XMLInputFormat.START_TAG_KEY, ConfigUtils.getXMLtags("start"): _*)
+    conf.setStrings(XMLInputFormat.END_TAG_KEY, ConfigUtils.getXMLtags("end"): _*)
     val jobName = "MapReduceJob1"
     val job = Job.getInstance(conf, jobName)
     job.setJarByClass(this.getClass)
@@ -45,9 +39,9 @@ object JobDriver extends LazyLogging {
     job.setOutputValueClass(classOf[IntWritable])
     job.setMapOutputKeyClass(classOf[Text])
     job.setMapOutputValueClass(classOf[IntWritable])
-    job.setMapperClass(classOf[JobDriver.Map])
-    job.setReducerClass(classOf[JobDriver.Reduce])
-    job.setInputFormatClass(classOf[XmlInputFormat])
+    job.setMapperClass(classOf[SimpleJob.Map])
+    job.setReducerClass(classOf[SimpleJob.Reduce])
+    job.setInputFormatClass(classOf[XMLInputFormat])
     job.setOutputFormatClass(classOf[TextOutputFormat[_, _]])
     FileInputFormat.addInputPath(job, new Path(input))
     val outputDir = output.replace("(jobName)", jobName)
@@ -60,29 +54,42 @@ object JobDriver extends LazyLogging {
 
   class Map extends Mapper[LongWritable, Text, Text, IntWritable] {
     private val xmlParser = SAXParserFactory.newInstance().newSAXParser()
-    //private val dtdFilePath = getClass.getClassLoader.getResource("dblp.dtd").toURI
+    private val dtdFilePath = getClass.getClassLoader.getResource("dblp.dtd").toURI
 
     private val one = new IntWritable(1)
     private val authorKey = new Text()
 
-    def createValidXML(publicationString: String): String = {
-      val xmlString =
-        s"""<?xml version="1.0" encoding="ISO-8859-1"?><!DOCTYPE dblp SYSTEM "dblp.dtd"><dblp>${publicationString}</dblp>"""
-      println(s"xmlString = $xmlString")
-      // XML.withSAXParser(xmlParser).loadString(xmlString)
-      xmlString
-    }
-
-
     override def map(key: LongWritable, value: Text, context: Mapper[LongWritable, Text, Text, IntWritable]#Context): Unit = {
       logger.debug(s"Starting the map phase for $key -> ${value.toString}")
 
-      println(value.toString)
+
       val publicationElement = createValidXML(value.toString)
-      authorKey.set(value)
-      context.write(value, one)
+      val authors = extractAuthors(publicationElement)
+      if (authors.nonEmpty)
+        authors.foreach { author =>
+          authorKey.set(author)
+          logger.info(s"Mapper Emit $author, 1")
+          context.write(authorKey, one)
+        }
     }
 
+    def createValidXML(publicationString: String): Elem = {
+      val xmlString =
+        s"""<?xml version="1.0" encoding="ISO-8859-1"?><!DOCTYPE dblp SYSTEM "$dtdFilePath"><dblp>${publicationString}</dblp>"""
+      println(s"xmlString = $xmlString")
+      XML.withSAXParser(xmlParser).loadString(xmlString)
+    }
+
+    def extractAuthors(str: Elem): Seq[String] = {
+      val authorTag = str.child.head.label match {
+        case "book" | "proceedings" => "editor"
+        case _ => "author"
+      }
+
+      val authors = (str \\ authorTag).collect({ case node => node.text })
+      logger.info(s"Authors of XML: $authors")
+      authors
+    }
   }
 
   class Reduce extends Reducer[Text, IntWritable, Text, IntWritable] {
@@ -99,6 +106,5 @@ object JobDriver extends LazyLogging {
       context.write(key, result)
     }
   }
-
 
 }
