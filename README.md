@@ -1,100 +1,265 @@
-# Homework 2
-### Description: you will gain experience with a distributed computational problem. The main textbook group will design and implement an instance of the map/reduce computational model whereas the alternative textbook group will use the CORBA model.
-### Grade: 10% + bonus up to 3% for deploying your map/reduce program at [AWS EMR](https://aws.amazon.com/emr) or the EC2 instances for the alternative textbook group.
-#### You can obtain this Git repo using the command git clone git@bitbucket.org:cs441_fall2020/homework2.git. You cannot push your code into this repo, otherwise, your grade for this homework will be ZERO!
 
-## Preliminaries
-If you have not already done so as part of your first homework, you must create your account at [BitBucket](https://bitbucket.org/), a Git repo management system. It is imperative that you use your UIC email account that has the extension @uic.edu. Once you create an account with your UIC address, BibBucket will assign you an academic status that allows you to create private repos. Bitbucket users with free accounts cannot create private repos, which are essential for submitting your homeworks and the course project. Your instructor created a team for this class named [cs441_Fall2020](https://bitbucket.org/cs441_fall2020/). Please contact your TA, Mr.Mohanty from your **UIC.EDU** account and they will add you to the team repo as developers, since they already have the admin privileges. Please use your emails from the class registration roster to add you to the team and you will receive an invitation from BitBucket to join the team. Since it is still a large class, please use your UIC email address for communications or Piazza and avoid emails from other accounts like funnybunny1992@gmail.com. If you don't receive a response within 12 hours, please contact us via Piazza, it may be a case that your direct emails went to the spam folder.
+## CS441 - ## CS 441 &ndash; Engineering Distributed Objects for Cloud Computing
 
-For the main textbook student group, in case you have not done so, you will install [IntelliJ](https://www.jetbrains.com/student/) with your academic license, the JDK, the Scala runtime and the IntelliJ Scala plugin, the [Simple Build Toolkit (SBT)](https://www.scala-sbt.org/1.x/docs/index.html) and make sure that you can create, compile, and run Java and Scala programs. Please make sure that you can run [Java monitoring tools](https://docs.oracle.com/javase/8/docs/technotes/guides/troubleshoot/tooldescr025.html) or you can choose a newer JDK and tools if you want to use a more recent one.
+## Homework 2 - DBLP-Statistics
 
+---
 
-Please set up your account with [AWS Educate](https://aws.amazon.com/education/awseducate/). Using your UIC email address will enable you to receive free credits for running your jobs in the cloud. Preferably, you should create your developer account for $30 per month to enjoy the full range of AWS services.
+### Overview
 
-You will use logging and configuration management frameworks. You will comment your code extensively and supply logging statements at different logging levels (e.g., TRACE, INFO, ERROR) to record information at some salient points in the executions of your programs. All input and configuration variables must be supplied through configuration files -- hardcoding these values in the source code is prohibited and will be punished by taking a large percentage of points from your total grade! You are expected to use [Logback](https://logback.qos.ch/) and [SLFL4J](https://www.slf4j.org/) for logging and [Typesafe Conguration Library](https://github.com/lightbend/config) for managing configuration files. These and other libraries should be exported into your project using your script [build.sbt](https://www.scala-sbt.org/1.0/docs/Basic-Def-Examples.html). Alternatively, you can use Python or C++ libraries for CORBA. These libraries and frameworks are widely used in the industry, so learning them is the time well spent to improve your resume.
+The objective of this homework was to process the [DBLP](https://dblp.uni-trier.de/) dataset using **Hadoop Map-Reduce framework** to find out various statistics. Each Job is named appropriately like: Job1, Job2, Job3, Job4, Job5
+EMR Link: https://youtu.be/ou1ybwYI7Ec
 
-## Overview
-In this homework, you will create a distributed program for parallel processing of the [publically available DBLP dataset](https://dblp.uni-trier.de) that contains entries for various publications at many different venues (e.g., conferences and journals). Raw [XML-based DBLP dataset](https://dblp.uni-trier.de/xml) is also publically available along with its schema and the documentation.
+### Instructions
 
-Each entry in the dataset describes a publication, which contains the list of authors, the title, and the publication venue and a few other attributes. The file is approximately 2.5Gb - not big by today's standards, but large enough for this homework assignment. Each entry is independent from the other one in that it can be processed without synchronizing with processing some other entries.
+#### Environment
 
-Consider the following entry in the dataset.
-```xml
-<inproceedings mdate="2017-05-24" key="conf/icst/GrechanikHB13">
-<author>Mark Grechanik</author>
-<author>B. M. Mainul Hossain</author>
-<author>Ugo Buy</author>
-<title>Testing Database-Centric Applications for Causes of Database Deadlocks.</title>
-<pages>174-183</pages>
-<year>2013</year>
-<booktitle>ICST</booktitle>
-<ee>https://doi.org/10.1109/ICST.2013.19</ee>
-<ee>http://doi.ieeecomputersociety.org/10.1109/ICST.2013.19</ee>
-<crossref>conf/icst/2013</crossref>
-<url>db/conf/icst/icst2013.html#GrechanikHB13</url>
-</inproceedings>
+The project was developed using the following environment:
+
+- **OS:** Windows 10
+- **IDE:** IntelliJ IDEA Ultimate 2018.3
+- **Hypervisor:** VMware Workstation 16 Pro
+- **Hadoop Distribution:** [Hortonworks Data Platform (3.0.1) Sandbox](https://hortonworks.com/products/sandbox/) deployed on VMware
+
+#### Prerequisites
+
+- [HDP Sandbox](https://hortonworks.com/products/sandbox/) set up and deployed on (VMware or VirtualBox). Read this [guide](https://hortonworks.com/tutorial/learning-the-ropes-of-the-hortonworks-sandbox/) for instructions on how to set up and use HDP Sandbox
+- Ability to use SSH and SCP on your system
+- [SBT](https://www.scala-sbt.org/) installed on your system
+- [dblp.xml](https://dblp.uni-trier.de/xml/) downloaded on your system
+
+#### Running the map reduce job
+
+1. Clone this repository
+2. Browse to the project directory
+3. Generate the fat jar file using SBT on shell / cmd
+
+   ```
+   sbt clean compile assembly
+   ```
+
+if the system has WSL, do. Else, delete that like in SBT file.
+`sbt deploy`
+
+4. Start HDP sandbox VM
+5. Copy the jar file to HDP Sandbox VM
+
+   ```
+   scp -P 2222 ./target/scala-2.13/DBLP-statistics-assembly-0.1.jar root@sandbox-hdp.hortonworks.com:~/
+   ```
+
+6. Copy `dblp.xml` to HDP Sandbox
+
+   ```
+   scp -P 2222 /path/to/dblp.xml root@sandbox-hdp.hortonworks.com:~/
+   ```
+
+7. SSH into HDP Sandbox
+
+   ```
+   ssh -p 2222 root@sandbox-hdp.hortonworks.com
+   ```
+
+8. Create input directory on HDFS and copy `dblp.xml` there
+
+   ```
+   hdfs dfs -mkdir -p /user/maria_dev/Input/
+
+   hdfs dfs -put dblp.xml /user/maria_dev/Input/
+   ```
+
+specify whatever input directory you wish
+
+9. Start the map-reduce job
+
+   ```
+   hadoop jar DBLP-statistics-assembly-0.1.jar /user/maria_dev/Input/ /user/maria_dev/Output/ Job1 Job2 Job3 Job4 Job5
+   ```
+
+### Exploratory analysis of DBLP
+
+#### Some grep Commands Run
+
+These were basic shell scripts to make sense of the XML
+
+1. Number of authors and editors. Just a ballpark. No filtering
+
+   ```console
+   prajwalkk@PRAJWALKK:~$ grep --count '<author' dblp.xml
+   18716385
+   prajwalkk@PRAJWALKK:~$ grep --count '<editor' dblp.xml
+   113016
+   ```
+
+2. Check the tags that precede `<author>` tag
+   ```console
+   prajwalkk@PRAJWALKK:~$ grep -B1 '<author>' dblp.xml | grep -vE '<author |^--$' | grep -oE '<(\w+) ?' | sort | uniq
+   <article
+   <author
+   <book
+   <cdrom
+   <crossref
+   <editor
+   <ee
+   <ee
+   <incollection
+   <inproceedings
+   <mastersthesis
+   <note
+   <phdthesis
+   <proceedings
+   <sub
+   <sup
+   <title
+   <url
+   <www
+   ```
+3. Editors also can be considered as author. Looking at the tags that precede editor
+
+   ```console
+   prajwalkk@PRAJWALKK:~$ grep -B1 '<author>' dblp.xml | grep -vE '<author |^--$' | grep -oE '<(\w+) ?' | sort | uniq
+   <article
+   <author
+   <book
+   <cdrom
+   <crossref
+   <editor
+   <ee
+   <ee
+   <incollection
+   <inproceedings
+   <mastersthesis
+   <note
+   <phdthesis
+   <proceedings
+   <sub
+   <sup
+   <title
+   <url
+   <www
+   ```
+
+   We only need these tags that specify publications `article|inproceedings|proceedings|book|incollection|phdthesis|mastersthesis|www|person|data`
+
+### Some observations and assumptions
+
+#### 1. Spreadsheet or a CSV file that shows top ten published authors at each venue.
+   To run this job:
+```
+hadoop jar DBLP-statistics-assembly-0.1.jar /user/maria_dev/Input/ /user/maria_dev/Output/ Job1
 ```
 
-This entry lists a paper at the IEEE International Conference on Software Testing, Verification and Validation (ICST) published in 2013 whose authors are my former Ph.D. student at UIC, now tenured Associate Professor at the University of Dhaka, Prof. Dr. B.M. Mainul Hussain whose advisor Prof.Mark Grechanik is a co-author on this paper. The third co-author is Prof.Ugo Buy, a faculty member at our CS department. The presence of three co-authors in a single publication like this one increments a count variable that represents the number of publications with three co-authors. Your job is to determine the distribution of the number of authors across many different journals and conferences using the information extracted from this dataset. Paritioning this dataset into shards is easy, since it requires to preserve the well-formedness of XML only. Most likely, you will write a simple program to partition the dataset into an approximately equal size shards.
+ 1. The jobs takes in the XML individual tag as input.
+ 2. The Mapper phase has `key, value` pairs as `venue, author`
+ 3. In the reducer phase, we generate reverse ordering of value `author`
+    based off its frequency of occourence in the list of values. The
+    list is sliced to take only 10 values.
+ 4. The sample output is shown below. First field is Venue, Next are the
+    authors with thier pulication count in descending order.
 
-As before, this homework script is written using a retroscripting technique, in which the homework outlines are generally and loosely drawn, and the individual students improvise to create the implementation that fits their refined objectives. In doing so, students are expected to stay within the basic requirements of the homework and they are free to experiments. Asking questions is important, so please ask away at Piazza!
+```
+     1  #MSM,Aba-Sah Dadzie(9),Milan Stankovic(8),Matthew Rowe 0001(7),Amparo Elizabeth Cano Basave(4),Giuseppe Rizzo 0002(3),Markus Strohmaier(3),Andrea Varga(3),Zhemin Zhu(2),Amparo Elizabeth Cano(2),Mena B. Habib(2)
+     2  #Microposts,Katrin Weller(2),Kara Greenfield(2),Kelly Geyer(2),Alyssa C. Mensch(2),Danica Radovanovic(2),Aba-Sah Dadzie(2),Olga Simek(2),Harald Sack(1),Nemanja Djuric(1),Marieke van Erp(1)
+     3  *SEM@COLING,Sabine Schulte im Walde(2),Deepak P 0001(1),James Pustejovsky(1),Torsten Zesch(1),Nitish Aggarwal(1),Anders Johannsen(1),Lucy Vanderwende(1),Anh Tran(1),Barbara Plank(1),Steve L. Manion(1)
+     4  *SEM@NAACL-HLT,Benjamin Van Durme(7),Mona T. Diab(6),Rada Mihalcea(6),Timothy Baldwin(6),Eneko Agirre(5),Dan Roth(5),Anette Frank(5),Ido Dagan(4),Steven Bethard(4),Sebastian Padó(4)
+     5  10th Anniversary Colloquium of UNU/IIST,Bernhard K. Aichernig(2),T. S. E. Maibaum(2),Chris George(1),Naoki Kobayashi 0001(1),Paul A. Bailes(1),Alexandre David(1),Natarajan Shankar(1),José Luiz Fiadeiro(1),Markus Kaltenbach(1),Dang Van Hung(1)
+     6  25 Years GULP,Paolo Torroni(2),Frank D. Valencia(1),Annalisa Bossi(1),Marco Gavanelli(1),Alberto Momigliano(1),María Alpuente(1),Sergio Greco(1),Gianfranco Rossi(1),Catuscia Palamidessi(1),Matteo Baldoni(1)
+     7  3D Multiscale Physiological Human,Nadia Magnenat-Thalmann(3),Daniel Thalmann(2),Gavin Olender(1),Jan Rzepecki(1),Sara Trombella(1),Pascal Perrier(1),Sean Lynch(1),Ian Stavness(1),Karelia Tecante(1),Joaquim Miguel Oliveira(1)
+     8  3D Research Challenges in Cultural Heritage,Sander Münster(2),Dieter W. Fellner(2),Jennifer von Schwerin(1),Mario E. Santana-Quintero(1),Daniel Thalmann(1),Patrick Callet(1),Oliver Hauck(1),Fabrizio Ivan Apollonio(1),Cindy Kröber(1),Moritz Neumüller(1)
+     9  3D-GIS,Alias Abdul-Rahman(5),Ayman F. Habib(4),Volker Coors(3),Francesco Fassi(3),Sisi Zlatanova(3),Weihong Cui(2),Mohammad Reza Malek(2),Jan Kolár(2),Wenzhong Shi(2),Jiann-Yeou Rau(2)
+    10  3DCVE@VR,Thierry Duval(6),Valérie Gouranton(4),Bruno Arnaldi(4),Morgan Le Chénéchal(3),Jérôme Royan(3),Florian Nouviale(1),Sascha Gebhardt(1),Nicolas Ladeveze(1),Bernd Hentschel 0001(1),Anderson Maciel(1)
+```
+#### Compute the list of authors who published without interruption for N years where 10 <= N
+ 1. The jobs takes in the XML individual tag as input.
+ 2. The Mapper phase has `key, value` pairs as `author, year`
+ 3. In the reducer phase, the list of years are sorted, made into a set of distinct elements. Then the maximum continuous range is calculated here. If the max value is more than 10, then it is emitted as reducer output
+ 4. The sample output is shown below. First field is author, second is number of continuous years. It is been sorted reverse by `sort -unr -k2 -t, Job2/continuous_n_years.csv | head -n20` . Note that, the original output is not sorted.
+ ```
+ Shi-Kuo Chang,51
+Arto Salomaa,50
+Ronald L. Rivest,49
+Béla Bollobás,48
+Stephen S. Yau,47
+Hanan Samet,46
+Christos H. Papadimitriou,45
+John H. Reif,44
+Bruno Courcelle,43
+Averill M. Law,42
+```
 
-## Functionality
-Your homework assignment is to create a program for parallel distributed processing of the publication dataset. Your goal is to produce the following statistics about the authors and the venues they published their papers at. First, you will compute a spreadsheet or an CSV file that shows top ten published authors at each venue. Second, you will compute the list of authors who published without interruption for N years where 10 <= N. Then, for each venue you will produce the list of publications that contains only one author. Next, you will produce the list of publications for each venue that contain the highest number of authors for each of these venues. Finally, you will produce the list of top 100 authors in the descending order who publish with most co-authors and the list of 100 authors who publish without any co-authors. 
+#### Generating publications with one author in each venue
 
-### Assignment for the main textbook group
-Your job is to create the mapper and the reducer for each task, explain how they work, and then to implement them and run on the DBLP dataset. The output of your map/reduce is a spreadsheet or an CSV file with the required statistics. The explanation of the map/reduce model is given in the main textbook in Chapter 4.
+1. The job takes in the XML individual tag as input.
+ 2. The Mapper phase has `key, value` pairs as `venue, publication`. Here the k,v pairs are written into file only if the author count is 1
+ 3. In the reducer phase, all the single author publications are concatenated onto a single string and written as the output
+ 4. The sample output is shown below. First field is author, second is number of continuous years. It is been sorted reverse by `
 
-You will create and run your software application using [Apache Hadoop](http://hadoop.apache.org/), a framework for distributed processing of large data sets across multiple computers (or even on a single node) using the map/reduce model. If your laptop/workstation is limited in its RAM, you can use [Cloudera QuickStart VM with the minimum req of RAM 4Gb](https://www.cloudera.com/downloads/quickstart_vms/5-12.html). Even though you can install and configure Hadoop on your computers, I recommend that you use a virtual machine (VM) of [Hortonworks Sandbox](http://hortonworks.com/products/sandbox/), a preconfigured Apache Hadoop installation with a comprehensive software stack. To run the VM, you can install vmWare or VirtualBox. As UIC students, you have access to free vmWare licenses, go to http://go.uic.edu/csvmware to obtain your free license. In some cases, I may have to provide your email addresses to a department administrator to enable your free VM academic licenses. Please notify me if you cannot register and gain access to the webstore.
+```
+     1  #MSM,Computational Social Science and Microblogs - The Good, the Bad and the Ugly.||Information Theoretic Tools for Social Media.||ACE: A Concept Extraction Approach using Linked Open Data.||Unsupervised Information Extraction using BabelNet and DBpedia.||A New ANEW: Evaluation of a Word List for Sentiment Analysis in Microblogs.
+     2  #Microposts,Studying the Role of Elites in U.S. Political Twitter Debates.
+     3  *SEM@COLING,Learning the Peculiar Value of Actions.||Identifying semantic relations in a specialized corpus through distributional analysis of a cooccurrence tensor.
+     4  *SEM@NAACL-HLT,Lexical semantic typologies from bilingual corpora - A framework.||Enthymemetic Conditionals.||Non-atomic Classification to Improve a Semantic Role Labeler for a Low-resource Language.||The complexity of finding the maximum spanning DAG and other restrictions for DAG parsing of natural language.||Simple and Phrasal Implicatives.||IBM_EG-CORE: Comparing multiple Lexical and NE matching features in measuring Semantic Textual similarity.||Adaptive Clustering for Coreference Resolution with Deterministic Rules and Web-Based Language Models.||Metaphor Identification as Interpretation.||UWashington: Negation Resolution using Machine Learning Methods.||FBK: Exploiting Phrasal and Contextual Clues for Negation Scope Detection.||An Evaluation of Graded Sense Disambiguation using Word Sense Induction.||"Could you make me a favour and do coffee, please?": Implications for Automatic Error Correction in English and Dutch.||More Words and Bigger Pictures.||#Emotional Tweets.||SRIUBC-Core: Multiword Soft Similarity Models for Textual Similarity.||Towards a Formal Distributional Semantics: Simulating Logical Calculi with Tensors.
+     5  10th Anniversary Colloquium of UNU/IIST,Where, Exactly, Is Software Development?||X2Rel: An XML Relation Language with Formal Semantics.||A Formal Basis for Some Dependability Notions.||"What Is an Infrastructure?" Towards an Informatics Answer.||Type Systems for Concurrent Programs.||Verification by Abstraction.||Real-Time Process Algebra and Its Applications.||Coordination Technologies for Just-in-Time Integration.||In Memoriam Armando Martín Haeberer: 4 January 1947 - 11 February 2003.||An Algebraic Approach to the VERILOG Programming.||Towards the Verifying Compiler.||Contract-Based Testing.||Multi-view Modeling of Software Systems.||UNU and UNU/IIST.||The Development of the RAISE Tools.||Real-Time Systems Development with Duration Calculi: An Overview.||A Grand Challenge Proposal for Formal Methods: A Verified Stack.
+```
+#### Publication at each venue with highest authors
+1.  The job takes in the XML individual tag as input.
+2.  The Mapper phase has  `key, value`  pairs as  `venue, (publication, num_authors) `
+3.  In the reducer phase, it has a filter function. The filter filters the tuple of `publication, num_authors)` by `max(num_authors)` Whatever value(s) are the same as the max is being written in the reducer output.
+4.  The sample output is shown below. 
+```
+	 1  #MSM,Making Sense of Location-based Micro-posts Using Stream Reasoning. (7)
+     2  #Microposts,A Reverse Approach to Named Entity Extraction and Linking in Microposts. (9)
+     3  *SEM@COLING,More or less supervised supersense tagging of Twitter. (5),Text Summarization through Entailment-based Minimum Vertex Cover. (5)
+     4  *SEM@NAACL-HLT,A New Dataset and Evaluation for Belief/Factuality. (18)
+     5  10th Anniversary Colloquium of UNU/IIST,A Tool Architecture for the Next Generation of Uppaal. (4)
+     6  25 Years GULP,Agents, Multi-Agent Systems and Declarative Programming: What, When, Where, Why, Who, How? (5)
+     7  3D Multiscale Physiological Human,Coupled Biomechanical Modeling of the Face, Jaw, Skull, Tongue, and Hyoid Bone. (7),Clinical Gait Analysis and Musculoskeletal Modeling. (7)
+     8  3D Research Challenges in Cultural Heritage,Enrichment and Preservation of Architectural Knowledge. (11)
+     9  3D-GIS,Development of Country Mosaic Using IRS-WiFS Data. (5),Automatic Generation of Pseudo Continuous LoDs for 3D Polyhedral Building Model. (5),Reconstruction of Complex Buildings using LIDAR and 2D Maps. (5),Macro to Micro Archaeological Documentation: Building a 3D GIS Model for Jerash City and the Artemis Temple. (5),Volumetric Spatiotemporal Data Model. (5),Research on a feature based spatio-temporal data model. (5),3D Modeling Moving Objects under Uncertainty Conditions. (5),Digital Terrain Models Derived from SRTM Data and Kriging. (5)
+    10  3DCVE@VR,When the giant meets the ant an asymmetric approach for collaborative and concurrent object manipulation in a multi-scale environment. (6)
+    
+```
+#### Top - 100 Collaborators and 100 Individualists
+1. This is a 2 phase Mapreduce Job. 
+2. First MR phase calculates the scores of each author. Second phase sorts them in descending order
+3. The Mapper of the first job has `key, value` pairs as `author, uniq_co_authors_list`This has 2 conditions. If the publication XML has nore than one author, all the possible permutations are generated. We know by the formula nP2 = 2 * nC2. This generates all the bidirectional relationships between authors using the scala's `permutation` and `combination` methods.  If it is a single author, a trash string is added as coauthor which is later discared in reduce phase
+4. In the reducer phase, the size of co-author list for each author is calculated and witten into the file.
+5. The file is then used as input for another mapreduce job which takkes in the reducer output. This job has the `key,value` as `num_co_author, author. The reducer is just a plain sorting class as it inherently sorts based on keys. 
+6. later these linux commands are executed to get the 2 files.
+```
+ grep ",0$" part-r-00000  | head -n100 > non_collaborators.csv
+ head -n100 part-r-00000 > top_100_collaborators.csv
+```
+```
+Top Collaborators:
+     1  Wei Li,-3642
+     2  Yang Liu,-3436
+     3  Wei Wang,-3407
+     4  Wei Zhang,-3337
+     5  Lei Zhang,-3318
+     6  Yu Zhang,-3224
+     7  Lei Wang,-3039
+     8  Li Zhang,-2678
+     9  Xin Wang,-2623
+    10  Jing Wang,-2571
+```
 
-The steps for obtaining your free academic vmWare licenses are the following:
-- Contact [Mr.Phil Bertran](pbeltr1@uic.edu) and CC to [DrMark](drmark@uic.edu) to obtain access to the vmWare academic program.
-- One approved, go to [Onthehub vmWare](http://go.uic.edu/csvmware).
-- Click on the "sign in" link at the top.
-- Click on "register".
-- Select "An account has been created..." and continue with the registration.
-- Make sure that you use the UIC email with which you are registered with the system.
-
-Only UIC students who are registered for this course are eligible. If you are auditing the course, you need to contact the uic webstore directly. Alternatively, you can use [VirtualBox from Oracle Corp](https://www.virtualbox.org/).
-
-You can complete this homework using Scala and __you will immensely enjoy__ the embedded XML processing facilities that come with Scala. You will use Simple Build Tools (SBT) for building the project and running automated tests. I recommend that you run the downloaded VM locally in vmWare or VirtualBox to develop and test your program before you move it to AWS.
-
-Next, after creating and testing your map/reduce program locally, you will deploy it and run it on the Amazon Elastic MapReduce (EMR) - you can find plenty of [documentation online](http://docs.aws.amazon.com/emr/latest/ManagementGuide/emr-work-with-steps.html). You will produce a short movie that documents all steps of the deployment and execution of your program with your narration and you will upload this movie to [youtube](www.youtube.com) and you will submit a link to your movie as part of your submission in the README.md file. To produce a movie, you may use an academic version of [Camtasia](https://shop.techsmith.com/store/techsm/en_US/cat/categoryID.67158100) or some other cheap/free screen capture technology from the UIC webstore or an application for a movie capture of your choice. The captured web browser content should show your login name in the upper right corner of the AWS application and you should introduce yourself in the beginning of the movie speaking into the camera.
-
-### Assignment for the alternative textbook group
-Your job is to create the distributed objects using [omniOrb CORBA framework](http://omniorb.sourceforge.net/omni42/omniORB/) for each task, explain how they work, and then to implement them and run on the DBLP dataset. The output of your distributed system is a spreadsheet or an CSV file with the required statistics. The explanation of the CORBA is given in the alternative textbook in Chapter 7 -Guide to Reliable Distributed Systems: Building High-Assurance Applications and Cloud-Hosted Services 2012th Edition by Kenneth P. Birman. You can complete your implementation using C++ or Python.
-
-Next, after creating and testing your program locally, you will deploy it and run it on the AWS EC2 IaaS. You will produce a short movie that documents all steps of the deployment and execution of your program with your narration and you will upload this movie to [youtube](www.youtube.com) and you will submit a link to your movie as part of your submission in the README.md file. To produce a movie, you may use an academic version of [Camtasia](https://shop.techsmith.com/store/techsm/en_US/cat/categoryID.67158100) or some other cheap/free screen capture technology from the UIC webstore or an application for a movie capture of your choice. The captured web browser content should show your login name in the upper right corner of the AWS application and you should introduce yourself in the beginning of the movie speaking into the camera.
+```
+Individualists:
+     1  P. Gonet,0
+     2  Claudius Graebner,0
+     3  Ángel del Río Fernández,0
+     4  Carl Engblom,0
+     5  Rouhollah Tavakoli,0
+     6  Yung Kyung Park,0
+     7  Eran Kahana,0
+     8  Iffat Jahan,0
+     9  Claudius Paul,0
+    10  Roulette Wm. Smith,0
+```
 
 
-## Baseline Submission
-Your baseline project submission should include your implementation, a conceptual explanation in the document or in the comments in the source code of how your mapper and reducer work to solve the problem, and the documentation that describe the build and runtime process, to be considered for grading. Your project submission should include all your source code written in Scala as well as non-code artifacts (e.g., configuration files), your project should be buildable using the SBT, and your documentation must specify how you paritioned the data and what input/outputs are. Simply copying Java programs from examples at the DBLP website and modifying them a bit will result in rejecting your submission.
-
-## Piazza collaboration
-You can post questions and replies, statements, comments, discussion, etc. on Piazza. For this homework, feel free to share your ideas, mistakes, code fragments, commands from scripts, and some of your technical solutions with the rest of the class, and you can ask and advise others using Piazza on where resources and sample programs can be found on the internet, how to resolve dependencies and configuration issues. When posting question and answers on Piazza, please select the appropriate folder, i.e., hw2 to ensure that all discussion threads can be easily located. Active participants and problem solvers will receive bonuses from the big brother :-) who is watching your exchanges on Piazza (i.e., your class instructor). However, *you must not describe your map/reduce design or specific details related how your construct your map/reduce pipeline!*
-
-## Git logistics
-**This is an individual homework.** Separate repositories will be created for each of your homeworks and for the course project. You will find a corresponding entry for this homework at git@bitbucket.org:cs441_fall2020/homework2.git. You will fork this repository and your fork will be private, no one else besides you, the TA and your course instructor will have access to your fork. Please remember to grant a read access to your repository to your TA and your instructor. In future, for the team homeworks and the course project, you should grant the write access to your forkmates, but NOT for this homework. You can commit and push your code as many times as you want. Your code will not be visible and it should not be visible to other students (except for your forkmates for a team project, but not for this homework). When you push the code into the remote repo, your instructor and the TA will see your code in your separate private fork. Making your fork public, pushing your code into the main repo, or inviting other students to join your fork for an individual homework will result in losing your grade. For grading, only the latest push timed before the deadline will be considered. **If you push after the deadline, your grade for the homework will be zero**. For more information about using the Git and Bitbucket specifically, please use this [link as the starting point](https://confluence.atlassian.com/bitbucket/bitbucket-cloud-documentation-home-221448814.html). For those of you who struggle with the Git, I recommend a book by Ryan Hodson on Ry's Git Tutorial. The other book called Pro Git is written by Scott Chacon and Ben Straub and published by Apress and it is [freely available](https://git-scm.com/book/en/v2/). There are multiple videos on youtube that go into details of the Git organization and use.
-
-Please follow this naming convention while submitting your work : "Firstname_Lastname_hw2" without quotes, where you specify your first and last names **exactly as you are registered with the University system**, so that we can easily recognize your submission. I repeat, make sure that you will give both your TA and the course instructor the read access to your *private forked repository*.
-
-## Discussions and submission
-You can post questions and replies, statements, comments, discussion, etc. on Piazza. Remember that you cannot share your code and your solutions privately, but you can ask and advise others using Piazza and StackOverflow or some other developer networks where resources and sample programs can be found on the Internet, how to resolve dependencies and configuration issues. Yet, your implementation should be your own and you cannot share it. Alternatively, you cannot copy and paste someone else's implementation and put your name on it. Your submissions will be checked for plagiarism. **Copying code from your classmates or from some sites on the Internet will result in severe academic penalties up to the termination of your enrollment in the University**. When posting question and answers on Piazza, please select the appropriate folder, i.e., hw1 to ensure that all discussion threads can be easily located.
-
-
-## Submission deadline and logistics
-Saturday, October 17 at 11PM CST via the bitbucket repository. Your submission will include the code for your program, your documentation with instructions and detailed explanations on how to assemble and deploy your program along with the results of its run and what the limitations of your implementation are. Again, do not forget, please make sure that you will give both your TA and your instructor the read access to your private forked repository. Your name should be shown in your README.md file and other documents. Your code should compile and run from the command line using the commands **sbt clean compile test** and **sbt clean compile run** or some other build/run system like cmake. Also, you project should be IntelliJ or PyCharm or CLion friendly, i.e., your graders should be able to import your code into IntelliJ and run from there. Use .gitignore to exlude files that should not be pushed into the repo.
-
-
-## Evaluation criteria
-- the maximum grade for this homework is 10% with the bonus up to 3% for doing the AWS EMR part. Points are subtracted from this maximum grade: for example, saying that 2% is lost if some requirement is not completed means that the resulting grade will be 10%-2% => 8%; if the core homework functionality does not work, no bonus points will be given;
-- the code does not work in that it does not produce a correct output or crashes: up to 5% lost;
-- having less than five unit and/or integration tests: up to 4% lost;
-- missing comments and explanations from the program: up to 5% lost;
-- logging is not used in the program: up to 3% lost;
-- hardcoding the input values in the source code instead of using the suggested configuration libraries: up to 4% lost;
-- no instructions in README.md on how to install and run your program: up to 10% lost;
-- the documentation exists but it is insufficient to understand how you assembled and deployed all components of the cloud: up to 4% lost;
-- the minimum grade for this homework cannot be less than zero.
-
-That's it, folks!
+#### Improvements for the future and Credits
+1. The XMLInputFormat is been referred from Mahout's XMLInpurFormat and Mayank Rastogi's project.
+2. The Sorting job in 5th program can be imporved to be a part of single MR execution
+3. The part-files need to be generated programatically rather than running `hdfs dfs -getmerge` inside of Scala program. 
