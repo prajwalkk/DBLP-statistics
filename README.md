@@ -172,7 +172,7 @@ hadoop jar DBLP-statistics-assembly-0.1.jar /user/maria_dev/Input/ /user/maria_d
     10  3DCVE@VR,Thierry Duval(6),Valérie Gouranton(4),Bruno Arnaldi(4),Morgan Le Chénéchal(3),Jérôme Royan(3),Florian Nouviale(1),Sascha Gebhardt(1),Nicolas Ladeveze(1),Bernd Hentschel 0001(1),Anderson Maciel(1)
 ```
 
-#### Compute the list of authors who published without interruption for N years where 10 <= N
+#### 2. Compute the list of authors who published without interruption for N years where 10 <= N
 
 To run this job:
 
@@ -199,7 +199,7 @@ hadoop jar DBLP-statistics-assembly-0.1.jar /user/maria_dev/Input/ /user/maria_d
 
 ```
 
-#### Generating publications with one author in each venue
+#### 3. Generating publications with one author in each venue
 
 To run this job:
 
@@ -220,7 +220,7 @@ hadoop jar DBLP-statistics-assembly-0.1.jar /user/maria_dev/Input/ /user/maria_d
      5  10th Anniversary Colloquium of UNU/IIST,Where, Exactly, Is Software Development?||X2Rel: An XML Relation Language with Formal Semantics.||A Formal Basis for Some Dependability Notions.||"What Is an Infrastructure?" Towards an Informatics Answer.||Type Systems for Concurrent Programs.||Verification by Abstraction.||Real-Time Process Algebra and Its Applications.||Coordination Technologies for Just-in-Time Integration.||In Memoriam Armando Martín Haeberer: 4 January 1947 - 11 February 2003.||An Algebraic Approach to the VERILOG Programming.||Towards the Verifying Compiler.||Contract-Based Testing.||Multi-view Modeling of Software Systems.||UNU and UNU/IIST.||The Development of the RAISE Tools.||Real-Time Systems Development with Duration Calculi: An Overview.||A Grand Challenge Proposal for Formal Methods: A Verified Stack.
 ```
 
-#### Publication at each venue with highest authors
+#### 4. Publication at each venue with highest authors
 
 To run this job:
 
@@ -247,7 +247,7 @@ hadoop jar DBLP-statistics-assembly-0.1.jar /user/maria_dev/Input/ /user/maria_d
 
 ```
 
-#### Top - 100 Collaborators and 100 Individualists
+#### 5. Top - 100 Collaborators and 100 Individualists
 
 To run this job:
 
@@ -297,7 +297,7 @@ Individualists:
 
 #### Improvements for the future and Credits
 
-1. The XMLInputFormat is been referred from Mahout's XMLInpurFormat and Mayank Rastogi's project.
+1. The XMLInputFormat is been referred from Mahout's XMLInpurFormat and [Mayank Rastogi](https://github.com/mayankrastogi)'s project.
 2. The Sorting job in 5th program can be imporved to be a part of single MR execution
 3. The part-files need to be generated programatically rather than running `hdfs dfs -getmerge` inside of Scala program.
 4. A standalone shell script that manages all the executions of copying the file to hdfs etc. to be created. 
