@@ -33,14 +33,14 @@ object CoAuthorRanking extends LazyLogging {
    *
    * @param configTypesafe
    */
-  def runJob(configTypesafe: Config): Unit = {
-    val input: String = configTypesafe.getString(Constants.INPUT_PATH)
-    val output: String = configTypesafe.getString(Constants.OUTPUT_PATH)
+  def runJob(input: String, output: String,configTypesafe: Config): Unit = {
+
     val outputSeperator = configTypesafe.getString(Constants.SEPERATOR)
 
     logger.debug(s"${this.getClass}: Job started")
     val conf = new Configuration
-    conf.set("mapreduce.output.textoutputformat.separator", configTypesafe.getString(outputSeperator))
+
+    conf.set("mapreduce.output.textoutputformat.separator", outputSeperator)
     conf.set("mapreduce.map.log.level", "WARN")
     conf.set("mapreduce.reduce.log.level", "WARN")
 
@@ -64,14 +64,16 @@ object CoAuthorRanking extends LazyLogging {
 
     FileInputFormat.addInputPath(job, new Path(input))
     val outputDir = output + jobName + Path.SEPARATOR
-    FileOutputFormat.setOutputPath(job, new Path(outputDir))
-    val header = Array("Top 100 Authors who publish with most Co-authors",
-      "Top 100 Authors who publish with least Co-authors")
+    val outputPath = new Path(outputDir)
+    outputPath.getFileSystem(conf).delete(outputPath, true)
+    FileOutputFormat.setOutputPath(job, outputPath)
+
     if (job.waitForCompletion(true)) {
       logger.info("Running Sorting Job")
       SortingJob.runJob(outputDir, output, jobName)
-      //HdfsIoUtils.writeToHDFS(outputDir, jobName, ParserUtils.formatCsv(header, getFinalCSV(output.replace("(jobName)", "Sorted" + jobName))))
-    } else System.exit(1)
+    } else {
+      logger.error("Sorting Failed for JOB5")
+    }
   }
 
 

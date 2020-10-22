@@ -14,4 +14,5 @@ object Constants {
   val NAME = "name"
   val XML_START_TAG = "start"
   val XML_END_TAG = "end"
+  val YEAR_NUM = "yearRange"
 }

@@ -15,6 +15,7 @@ import org.apache.hadoop.mapreduce.lib.output.{FileOutputFormat, TextOutputForma
 import org.apache.hadoop.mapreduce.{Job, Mapper, Reducer}
 
 import scala.jdk.CollectionConverters.IterableHasAsScala
+import scala.sys.process.stringSeqToProcess
 
 
 /*
@@ -31,9 +32,8 @@ object VenueSingleAuthor extends LazyLogging {
    *
    * @param configTypesafe
    */
-  def runJob(configTypesafe: Config) = {
-    val input: String = configTypesafe.getString(Constants.INPUT_PATH)
-    val output: String = configTypesafe.getString(Constants.OUTPUT_PATH)
+  def runJob(input: String, output: String, configTypesafe: Config) = {
+
     val outputSeperator = configTypesafe.getString(Constants.SEPERATOR)
 
     logger.debug(s"${this.getClass}: Job initiated")
@@ -63,10 +63,18 @@ object VenueSingleAuthor extends LazyLogging {
 
     FileInputFormat.addInputPath(job, new Path(input))
     val outputDir = output + jobName + Path.SEPARATOR
-    FileOutputFormat.setOutputPath(job, new Path(outputDir))
+    val outputPath = new Path(outputDir)
+    outputPath.getFileSystem(conf).delete(outputPath, true)
+    FileOutputFormat.setOutputPath(job, outputPath)
 
-    System.exit(if (job.waitForCompletion(true)) 0
-    else 1)
+    if (job.waitForCompletion(true)) {
+      logger.info(s"Success on ${jobName}")
+      val a = Seq("hdfs", "dfs", "-getmerge", s"${output}${jobName}/*", "./SingleAuthorsPerVenue_Job3.csv").!!
+      val b = Seq("hdfs", "dfs", "-mkdir", "-p", outputDir+"FinalOP/").!!
+      val c = Seq("hdfs", "dfs", "-put" ,"./SingleAuthorsPerVenue_Job3.csv", outputDir+"FinalOP/").!!
+      logger.info(s"Status $a $b $c")
+    }
+    else logger.error(s"Failed on ${jobName}")
   }
 
 

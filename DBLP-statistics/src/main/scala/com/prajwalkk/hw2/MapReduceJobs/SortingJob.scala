@@ -27,7 +27,7 @@ object SortingJob extends LazyLogging {
     conf.set("mapreduce.reduce.log.level", "WARN")
     val jobName = "Sorted" + inputJobName
     val job = Job.getInstance(conf, jobName)
-
+    job.setNumReduceTasks(1)
     job.setJarByClass(SortingJob.getClass)
 
     job.setOutputKeyClass(classOf[IntWritable])
@@ -44,8 +44,23 @@ object SortingJob extends LazyLogging {
     job.setOutputFormatClass(classOf[TextOutputFormat[_, _]])
 
     FileInputFormat.addInputPath(job, new Path(input))
-    FileOutputFormat.setOutputPath(job, new Path(output + jobName + "/"))
-    if (job.waitForCompletion(true)) return else System.exit(1)
+    val outputPath = new Path(output + jobName + "/")
+    outputPath.getFileSystem(conf).delete(outputPath, true)
+    FileOutputFormat.setOutputPath(job, outputPath)
+    if (job.waitForCompletion(true)) {
+      logger.info("Sorting Done")
+      // Get the sorted files
+      //      val a = Seq("hdfs", "dfs", "-getmerge", s"${output}${jobName}/*", "./Sortedpgm.csv").!!
+      //      // Get top 100
+      //      val b = Seq("head", "-n100", "./Sortedpgm.csv", ">", "Mapred_5_Top_100.csv").!!
+      //      //get least 100
+      //      val c = Seq("grep", "-E", "',0$'", "Sortedpgm.csv", "-m100", "-h", ">", "./Mapred_5_Bottom_100.csv").!!
+      //      val d = Seq("hdfs", "dfs", "-put", "./Sortedpgm.csv", output + jobName + "/" + "FinalOP/").!!
+      //      val e = Seq("hdfs", "dfs", "-put", "./Mapred_5_Bottom_100.csv", output + jobName + "/" + "FinalOP/").!!
+      //      logger.info(s"Status = $a $b $c $d $e")
+    }
+    else
+      logger.error("Sorting Did not complete")
   }
 
   class SortMap extends Mapper[LongWritable, Text, IntWritable, Text] {

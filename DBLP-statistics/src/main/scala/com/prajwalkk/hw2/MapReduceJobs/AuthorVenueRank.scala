@@ -15,6 +15,7 @@ import org.apache.hadoop.mapreduce.lib.output.{FileOutputFormat, TextOutputForma
 import org.apache.hadoop.mapreduce.{Job, Mapper, Reducer}
 
 import scala.jdk.CollectionConverters.IterableHasAsScala
+import scala.sys.process.stringSeqToProcess
 
 /*
 *
@@ -31,10 +32,8 @@ object AuthorVenueRank extends LazyLogging {
    *
    * @param configTypesafe Job config
    */
-  def runJob(configTypesafe: Config) = {
+  def runJob(input: String, output: String, configTypesafe: Config) = {
 
-    val input: String = configTypesafe.getString(Constants.INPUT_PATH)
-    val output: String = configTypesafe.getString(Constants.OUTPUT_PATH)
     val outputSeperator = configTypesafe.getString(Constants.SEPERATOR)
 
     val conf = new Configuration
@@ -61,10 +60,19 @@ object AuthorVenueRank extends LazyLogging {
 
     FileInputFormat.addInputPath(job, new Path(input))
     val outputDir = output + jobName + Path.SEPARATOR
-    FileOutputFormat.setOutputPath(job, new Path(outputDir))
+    val outputPath = new Path(outputDir)
+    outputPath.getFileSystem(conf).delete(outputPath, true)
+    FileOutputFormat.setOutputPath(job, outputPath)
 
-    System.exit(if (job.waitForCompletion(true)) 0
-    else 1)
+
+    if (job.waitForCompletion(true)) {
+      logger.info(s"Success on ${jobName}")
+      val a = Seq("hdfs", "dfs", "-getmerge", s"${output}${jobName}/*", "./top10AuthorsPerVenue_Job1.csv").!!
+      val b = Seq("hdfs", "dfs", "-mkdir", "-p", outputDir+"FinalOP/").!!
+      val c = Seq("hdfs", "dfs", "-put" ,"./top10AuthorsPerVenue_Job1.csv", outputDir+"FinalOP/").!!
+      logger.info(s"Status $a $b $c")
+    }
+    else logger.error(s"Failed on ${jobName}")
   }
 
   /**
@@ -116,6 +124,7 @@ object AuthorVenueRank extends LazyLogging {
       logger.debug(s"${this.getClass}: Reducer phase started")
       val authors = values.asScala.map(value => value.toString).toList
       // Generates reverse ordering of (author ) based off frequency. Sliced to take only 10 values.
+      //List(a,a,b,b,c) -> //list((a, List(a,a)), (b, List(b,b)), (c, List(c)) => list((a,2), (b,2), c(1))
       if (authors.nonEmpty) {
         val topTen = authors.groupBy(identity).toSeq
           .sortBy(-_._2.size)

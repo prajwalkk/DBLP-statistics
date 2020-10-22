@@ -46,9 +46,10 @@ object SimpleJob extends LazyLogging {
     FileInputFormat.addInputPath(job, new Path(input))
     val outputDir = output.replace("(jobName)", jobName)
     FileOutputFormat.setOutputPath(job, new Path(outputDir))
-    val header: Array[String] = Array("Co-Author Bin", "Number Of Co-Authors")
-    System.exit(if (job.waitForCompletion(true)) 0
-    else 1)
+    if (job.waitForCompletion(true))
+      logger.info(s"Success on ${jobName}")
+    else
+      logger.error(s"Fail on ${jobName}")
   }
 
 

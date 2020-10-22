@@ -2,6 +2,7 @@ package com.prajwalkk.hw2.Utils
 
 
 import javax.xml.parsers.SAXParserFactory
+
 import scala.xml.{Elem, XML}
 
 /*
@@ -16,6 +17,11 @@ object XMLUtils {
 
 
   def createValidXML(publicationString: String): Elem = {
+    val publicationStringCleaned = publicationString.replaceAll("&amp;", "&")
+      .replaceAll("&apos;", "'")
+      .replaceAll("&lt;", "<")
+      .replaceAll("&gt;", ">")
+      .replaceAll("[^\\x00-\\x7F]", "")
     val xmlString =
       s"""<?xml version="1.0" encoding="ISO-8859-1"?><!DOCTYPE dblp SYSTEM "$dtdFilePath"><dblp>${publicationString}</dblp>"""
     println(s"xmlString = $xmlString")
@@ -38,7 +44,9 @@ object XMLUtils {
       case "article" => "journal"
       case "inproceedings" | "proceedings" | "incollection" => "booktitle"
       case "book" | "phdthesis" | "mastersthesis" => "publisher"
+      case _ => ""
     }
+    if (venueTag == "") return ""
     val venue = if ((str \\ venueTag).text != "") (str \\ venueTag).text else "NoVenueSpecified"
     venue
   }

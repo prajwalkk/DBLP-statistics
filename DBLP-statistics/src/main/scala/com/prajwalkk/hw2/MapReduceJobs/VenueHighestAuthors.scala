@@ -15,6 +15,7 @@ import org.apache.hadoop.mapreduce.lib.output.{FileOutputFormat, TextOutputForma
 import org.apache.hadoop.mapreduce.{Job, Mapper, Reducer}
 
 import scala.jdk.CollectionConverters._
+import scala.sys.process.stringSeqToProcess
 
 /*
 *
@@ -30,10 +31,9 @@ object VenueHighestAuthors extends LazyLogging {
    *
    * @param configTypesafe
    */
-  def runJob(configTypesafe: Config) = {
+  def runJob(input: String, output: String,configTypesafe: Config) = {
 
-    val input: String = configTypesafe.getString(Constants.INPUT_PATH)
-    val output: String = configTypesafe.getString(Constants.OUTPUT_PATH)
+
     val outputSeperator = configTypesafe.getString(Constants.SEPERATOR)
 
     logger.debug(s"${this.getClass}: Job initiated")
@@ -63,15 +63,28 @@ object VenueHighestAuthors extends LazyLogging {
 
     FileInputFormat.addInputPath(job, new Path(input))
     val outputDir = output + jobName + Path.SEPARATOR
-    FileOutputFormat.setOutputPath(job, new Path(outputDir))
+    val outputPath = new Path(outputDir)
+    outputPath.getFileSystem(conf).delete(outputPath, true)
+    FileOutputFormat.setOutputPath(job, outputPath)
 
-    System.exit(if (job.waitForCompletion(true)) 0
-    else 1)
+    if (job.waitForCompletion(true)) {
+      logger.info(s"Success on ${jobName}")
+      // Get the sorted files
+      val a = Seq("hdfs", "dfs", "-getmerge", s"${output}${jobName}/*", "./HighestAuthorsPerVenue_Job4.csv").!!
+      val b = Seq("hdfs", "dfs", "-mkdir", "-p", outputDir+"FinalOP/").!!
+      val c = Seq("hdfs", "dfs", "-put" ,"./HighestAuthorsPerVenue_Job4.csv", outputDir+"FinalOP/").!!
+      logger.info(s"Status $a $b $c")
+    }
+    else
+      logger.info(s"Failed on ${jobName}")
   }
 
   def convertListToMap(list: Iterable[String]): Map[String, Int] = {
     val mappedVals = list.map { tag =>
-      (tag.split(">")(0), tag.split(">")(1).toInt)
+      val pattern = """TitMapx:(.+)==>AuthXCntMap(\d+)""".r
+      val pattern(titleName, authorSize) = tag
+      // Collect
+      (titleName, authorSize.toInt)
     }.toMap
     mappedVals
   }
@@ -93,7 +106,7 @@ object VenueHighestAuthors extends LazyLogging {
       val venues = extractVenues(publicationElement)
       if (authors.nonEmpty && venues != "" && publicationName != "") {
         venue.set(venues)
-        pubCount.set(publicationName + ">" + authors.size)
+        pubCount.set("TitMapx:" + publicationName + "==>" + "AuthXCntMap" + authors.size)
         logger.info(s"Mapper Emit: ${venues} -> $publicationName > ${authors.size}")
         context.write(venue, pubCount)
       }
@@ -108,17 +121,22 @@ object VenueHighestAuthors extends LazyLogging {
                         context: Reducer[Text, Text, Text, Text]#Context): Unit = {
 
       val stringArray = values.asScala.map(value => value.toString)
-      val authorCounts = convertListToMap(stringArray)
-      // val (maxPublicaton, maxAuthorNumber) = authorCounts.maxBy(_._2)
-      // Handles multiple max author. No TieBreaker needed.
-      val maxMap = authorCounts.filter { case (k, v) =>
-        v == authorCounts.values.max
+
+      try{
+        val authorCounts = convertListToMap(stringArray)
+        // val (maxPublicaton, maxAuthorNumber) = authorCounts.maxBy(_._2)
+        // Handles multiple max author. No TieBreaker needed.
+        val maxMap = authorCounts.filter { case (k, v) =>
+          v == authorCounts.values.max
+        }
+        val maxMapString = maxMap.map { case (k, v) =>
+          s"$k ($v)"
+        }.toList.mkString(",")
+        logger.info(s"${key.toString} -> $maxMapString")
+        context.write(key, new Text(maxMapString))
+      }catch {
+        case matchError: MatchError => logger.error(s"Bad title: Skipping + ${matchError.getMessage()}")
       }
-      val maxMapString = maxMap.map { case (k, v) =>
-        s"$k ($v)"
-      }.toList.mkString(",")
-      logger.info(s"${key.toString} -> $maxMapString")
-      context.write(key, new Text(maxMapString))
     }
   }
 

@@ -16,6 +16,7 @@ import org.apache.hadoop.mapreduce.{Job, Mapper, Reducer}
 
 import scala.collection.mutable.ArrayBuffer
 import scala.jdk.CollectionConverters._
+import scala.sys.process.stringSeqToProcess
 
 /*
 *
@@ -29,11 +30,11 @@ object ContinuousAuthor extends LazyLogging {
   /**
    * This job has mapper emitting Author -> year.
    * The reducers calculates the max continuous year range for that author
+   *
    * @param configTypesafe
    */
-  def runJob(configTypesafe: Config) = {
-    val input: String = configTypesafe.getString(Constants.INPUT_PATH)
-    val output: String = configTypesafe.getString(Constants.OUTPUT_PATH)
+  def runJob(input: String, output: String, configTypesafe: Config) = {
+
     val outputSeperator = configTypesafe.getString(Constants.SEPERATOR)
 
     logger.debug(s"${this.getClass}: Job initiated")
@@ -45,6 +46,7 @@ object ContinuousAuthor extends LazyLogging {
 
     conf.setStrings(XMLInputFormat.START_TAG_KEY, ConfigUtils.getXMLtags(Constants.XML_START_TAG): _*)
     conf.setStrings(XMLInputFormat.END_TAG_KEY, ConfigUtils.getXMLtags(Constants.XML_END_TAG): _*)
+    conf.setInt(Constants.YEAR_NUM, configTypesafe.getString(Constants.YEAR_NUM).toInt)
     val jobName = configTypesafe.getString(Constants.NAME)
     val job = Job.getInstance(conf, jobName)
     job.setJarByClass(this.getClass)
@@ -63,10 +65,18 @@ object ContinuousAuthor extends LazyLogging {
 
     FileInputFormat.addInputPath(job, new Path(input))
     val outputDir = output + jobName + Path.SEPARATOR
-    FileOutputFormat.setOutputPath(job, new Path(outputDir))
+    val outputPath = new Path(outputDir)
+    outputPath.getFileSystem(conf).delete(outputPath, true)
+    FileOutputFormat.setOutputPath(job, outputPath)
 
-    System.exit(if (job.waitForCompletion(true)) 0
-    else 1)
+    if (job.waitForCompletion(true)) {
+      logger.info(s"Success on ${jobName}")
+      val a = Seq("hdfs", "dfs", "-getmerge", s"${output}${jobName}/*", "./Continuous_N_Author_Job2.csv").!!
+      val b = Seq("hdfs", "dfs", "-mkdir", "-p", outputDir + "FinalOP/").!!
+      val c = Seq("hdfs", "dfs", "-put", "./Continuous_N_Author_Job2.csv", outputDir + "FinalOP/").!!
+      logger.info(s"Status $a $b $c")
+    }
+    else logger.error(s"Failed on ${jobName}")
   }
 
   class AuthorYearMap extends Mapper[LongWritable, Text, Text, IntWritable] {
@@ -101,14 +111,14 @@ object ContinuousAuthor extends LazyLogging {
                         context: Reducer[Text, IntWritable, Text, IntWritable]#Context): Unit = {
 
       logger.debug(s"${this.getClass}: Reducer initiated")
+      val yearRange = context.getConfiguration.getInt(Constants.YEAR_NUM, 10)
       val valuesAsInt = values.asScala.map(value => value.get).toList
       val maxRange = if (valuesAsInt.nonEmpty) findMaxRange(valuesAsInt) else 0
       logger.info(s"Reducer emit: ${key.toString} -> $maxRange")
-      if (maxRange >= 10) {
+      if (maxRange >= yearRange) {
         context.write(key, new IntWritable(maxRange))
       }
-
-
+      
     }
 
     // credits @link{https://stackoverflow.com/questions/36778213/how-to-find-the-maximum-consecutive-years-for-each-id-using-scala-spark}
@@ -121,6 +131,8 @@ object ContinuousAuthor extends LazyLogging {
           if (y2 - y1 == 1) ranges(ranges.size - 1) += 1
           else ranges += 1
         }
+      // handled null arrays above. this is to eliminate warnings of compiler
+      case _ => 0
       }
       ranges.max
     }

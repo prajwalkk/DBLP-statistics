@@ -1,6 +1,9 @@
 package com.prajwalkk.hw2.Utils
 
+import java.io.File
+
 import com.prajwalkk.hw2.MapReduceJobs.{AuthorVenueRank, CoAuthorRanking, ContinuousAuthor, VenueHighestAuthors, VenueSingleAuthor}
+import com.typesafe.config.Config
 import com.typesafe.scalalogging.LazyLogging
 
 /*
@@ -12,55 +15,52 @@ import com.typesafe.scalalogging.LazyLogging
 object JobDriver extends LazyLogging {
   def main(args: Array[String]): Unit = {
 
-    if (args.size > 0) {
-      val s = args.toList.distinct
-      s.foreach { jobString =>
+    println(args.toList)
+    println(System.getProperty("user.dir"))
+    if (args.size > 2) {
+      val input = args(0)
+      val output = args(1)
+      val s = args.toList.drop(2).distinct
+      logger.info(s.toString())
+      val configTypesafe: Config = ConfigUtils.getConfigFile("mapredjobs.conf")
+      s.foreach {
 
-
-        jobString match {
-
-
-          case "Job1" => {
-            ConfigUtils.getJobTags("Job1")
-            logger.info("Running Venue Ranking")
-            val conf = ConfigUtils.getJobTags(jobString)
-            AuthorVenueRank.runJob(conf)
-          }
-
-          case "Job2" => {
-            ConfigUtils.getJobTags("Job2")
-            logger.info("Running longest Year range above 10")
-            val conf = ConfigUtils.getJobTags(jobString)
-            ContinuousAuthor.runJob(conf)
-          }
-
-          case "Job3" => {
-            ConfigUtils.getJobTags("Job3")
-            logger.info("Running Venues with Single Author publications")
-            val conf = ConfigUtils.getJobTags(jobString)
-            VenueSingleAuthor.runJob(conf)
-          }
-
-          case "Job4" => {
-            ConfigUtils.getJobTags("Job4")
-            logger.info("Running Puglication for each venue with highest authors:")
-            val conf = ConfigUtils.getJobTags(jobString)
-            VenueHighestAuthors.runJob(conf)
-          }
-
-          case "Job5" => {
-            ConfigUtils.getJobTags("Job5")
-            logger.info("Running Co Author Ranking")
-            val conf = ConfigUtils.getJobTags(jobString)
-            CoAuthorRanking.runJob(conf)
-          }
-
-          case _ => logger.error(s"Invalid jobName $jobString")
+        case jobString@"Job1" => {
+          logger.info("Running Venue Ranking")
+          val conf = ConfigUtils.getJobTags(configTypesafe, jobString)
+          AuthorVenueRank.runJob(input, output, conf)
         }
-      }
 
+        case jobString@"Job2" => {
+          logger.info("Running longest Year range above 10")
+          val conf = ConfigUtils.getJobTags(configTypesafe, jobString)
+          ContinuousAuthor.runJob(input, output, conf)
+        }
+
+        case jobString@"Job3" => {
+          logger.info("Running Venues with Single Author publications")
+          val conf = ConfigUtils.getJobTags(configTypesafe, jobString)
+          VenueSingleAuthor.runJob(input, output, conf)
+        }
+
+        case jobString@"Job4" => {
+          logger.info("Running Publication for each venue with highest authors:")
+          val conf = ConfigUtils.getJobTags(configTypesafe, jobString)
+          VenueHighestAuthors.runJob(input, output, conf)
+        }
+
+        case jobString@"Job5" => {
+          logger.info("Running Co Author Ranking")
+          val conf = ConfigUtils.getJobTags(configTypesafe, jobString)
+          CoAuthorRanking.runJob(input, output, conf)
+        }
+
+        case jobString => logger.error(s"Invalid jobName $jobString")
+      }
+      System.exit(0)
     } else {
-      logger.error("hadoop jar Job<n>")
+      logger.error("Usage: hadoop jar configpath Job1 Job2 ...")
+      System.exit(1)
     }
 
 

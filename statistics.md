@@ -1,5 +1,6 @@
 ## Git Commands Run
 
+Video Link: https://youtu.be/ou1ybwYI7Ec
 These were basic shell scripts to make sense of the XML
 
 1. Number of authors and editors. Just a ballpark. No filtering
