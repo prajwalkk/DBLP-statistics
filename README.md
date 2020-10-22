@@ -33,9 +33,9 @@ The project was developed using the following environment:
 2. Browse to the project directory
 3. Generate the fat jar file using SBT on shell / cmd
 
-   ```
-   sbt clean compile assembly
-   ```
+```
+sbt clean compile assembly
+```
 
 if the system has WSL, do. Else, delete that like in SBT file.
 `sbt deploy`
@@ -43,37 +43,37 @@ if the system has WSL, do. Else, delete that like in SBT file.
 4. Start HDP sandbox VM
 5. Copy the jar file to HDP Sandbox VM
 
-   ```
-   scp -P 2222 ./target/scala-2.13/DBLP-statistics-assembly-0.1.jar maria_dev@sandbox-hdp.hortonworks.com:~/
-   ```
+```
+scp -P 2222 ./target/scala-2.13/DBLP-statistics-assembly-0.1.jar maria_dev@sandbox-hdp.hortonworks.com:~/
+```
 
 6. Copy `dblp.xml` to HDP Sandbox
 
-   ```
-   scp -P 2222 /path/to/dblp.xml maria_dev@sandbox-hdp.hortonworks.com:~/
-   ```
+```
+scp -P 2222 /path/to/dblp.xml maria_dev@sandbox-hdp.hortonworks.com:~/
+```
 
 7. SSH into HDP Sandbox
 
-   ```
-   ssh -p 2222 maria_dev@sandbox-hdp.hortonworks.com
-   ```
+```
+ssh -p 2222 maria_dev@sandbox-hdp.hortonworks.com
+```
 
 8. Create input directory on HDFS and copy `dblp.xml` there
 
-   ```
-   hdfs dfs -mkdir -p /user/maria_dev/Input/
-   hdfs dfs -put dblp.xml /user/maria_dev/Input/
-   
-   ```
+```
+hdfs dfs -mkdir -p /user/maria_dev/Input/
+hdfs dfs -put dblp.xml /user/maria_dev/Input/
+
+```
 
 specify whatever input directory you wish
 
-9. Start the map-reduce job
+9. Start the map-reduce job. You can specify one or more `Job<n>` tags
 
-   ```
-   hadoop jar DBLP-statistics-assembly-0.1.jar /user/maria_dev/Input/ /user/maria_dev/Output/ Job1 Job2 Job3 Job4 Job5
-   ```
+```
+hadoop jar DBLP-statistics-assembly-0.1.jar /user/maria_dev/Input/ /user/maria_dev/Output/ Job1 Job2 Job3 Job4 Job5
+```
 
 ### Exploratory analysis of DBLP
 
@@ -174,6 +174,12 @@ hadoop jar DBLP-statistics-assembly-0.1.jar /user/maria_dev/Input/ /user/maria_d
 
 #### Compute the list of authors who published without interruption for N years where 10 <= N
 
+To run this job:
+
+```
+hadoop jar DBLP-statistics-assembly-0.1.jar /user/maria_dev/Input/ /user/maria_dev/Output/ Job2
+```
+
 1.  The jobs takes in the XML individual tag as input.
 2.  The Mapper phase has `key, value` pairs as `author, year`
 3.  In the reducer phase, the list of years are sorted, made into a set of distinct elements. Then the maximum continuous range is calculated here. If the max value is more than 10, then it is emitted as reducer output
@@ -195,6 +201,12 @@ hadoop jar DBLP-statistics-assembly-0.1.jar /user/maria_dev/Input/ /user/maria_d
 
 #### Generating publications with one author in each venue
 
+To run this job:
+
+```
+hadoop jar DBLP-statistics-assembly-0.1.jar /user/maria_dev/Input/ /user/maria_dev/Output/ Job3
+```
+
 1. The job takes in the XML individual tag as input.
 2. The Mapper phase has `key, value` pairs as `venue, publication`. Here the k,v pairs are written into file only if the author count is 1
 3. In the reducer phase, all the single author publications are concatenated onto a single string and written as the output
@@ -209,6 +221,12 @@ hadoop jar DBLP-statistics-assembly-0.1.jar /user/maria_dev/Input/ /user/maria_d
 ```
 
 #### Publication at each venue with highest authors
+
+To run this job:
+
+```
+hadoop jar DBLP-statistics-assembly-0.1.jar /user/maria_dev/Input/ /user/maria_dev/Output/ Job4
+```
 
 1.  The job takes in the XML individual tag as input.
 2.  The Mapper phase has `key, value` pairs as `venue, (publication, num_authors) `
@@ -230,6 +248,12 @@ hadoop jar DBLP-statistics-assembly-0.1.jar /user/maria_dev/Input/ /user/maria_d
 ```
 
 #### Top - 100 Collaborators and 100 Individualists
+
+To run this job:
+
+```
+hadoop jar DBLP-statistics-assembly-0.1.jar /user/maria_dev/Input/ /user/maria_dev/Output/ Job5
+```
 
 1. This is a 2 phase Mapreduce Job.
 2. First MR phase calculates the scores of each author. Second phase sorts them in descending order
@@ -276,3 +300,4 @@ Individualists:
 1. The XMLInputFormat is been referred from Mahout's XMLInpurFormat and Mayank Rastogi's project.
 2. The Sorting job in 5th program can be imporved to be a part of single MR execution
 3. The part-files need to be generated programatically rather than running `hdfs dfs -getmerge` inside of Scala program.
+4. A standalone shell script that manages all the executions of copying the file to hdfs etc. to be created. 
