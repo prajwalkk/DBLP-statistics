@@ -13,6 +13,8 @@ import scala.jdk.CollectionConverters.CollectionHasAsScala
 * Created by: prajw
 * Date: 15-Oct-20
 *
+* Responsible to creating and reading configs
+*
 */
 object ConfigUtils {
   val xmlDetails = ConfigFactory.load("xmltagpair.conf").getConfig("xmltags")

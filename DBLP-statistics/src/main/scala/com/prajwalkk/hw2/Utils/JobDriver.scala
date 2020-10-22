@@ -15,8 +15,6 @@ import com.typesafe.scalalogging.LazyLogging
 object JobDriver extends LazyLogging {
   def main(args: Array[String]): Unit = {
 
-    println(args.toList)
-    println(System.getProperty("user.dir"))
     if (args.size > 2) {
       val input = args(0)
       val output = args(1)
