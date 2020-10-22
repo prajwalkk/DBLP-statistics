@@ -92,55 +92,54 @@ prajwalkk@PRAJWALKK:~$ grep --count '<editor' dblp.xml
 
 2. Check the tags that precede `<author>` tag
    
-	```
-	prajwalkk@PRAJWALKK:~$ grep -B1 '<author>' dblp.xml | grep -vE '<author |^--$' | grep -oE '<(\w+) ?' | sort | uniq
-	<article
-	<author
-	<book
-	<cdrom
-	<crossref
-	<editor
-	<ee
-	<ee
-	<incollection
-	<inproceedings
-	<mastersthesis
-	<note
-	<phdthesis
-	<proceedings
-	<sub
-	<sup
-	<title
-	<url
-	<www
-	```
-3. Editors also can be considered as author. Looking at the tags that precede editor
+```
+prajwalkk@PRAJWALKK:~$ grep -B1 '<author>' dblp.xml | grep -vE '<author |^--$' | grep -oE '<(\w+) ?' | sort | uniq
+<article
+<author
+<book
+<cdrom
+<crossref
+<editor
+<ee
+<ee
+<incollection
+<inproceedings
+<mastersthesis
+<note
+<phdthesis
+<proceedings
+<sub
+<sup
+<title
+<url
+<www
+```
+3. Editors also can be considered as author. Looking at the tags that precede editor.
 
-   ```
-   prajwalkk@PRAJWALKK:~$ grep -B1 '<author>' dblp.xml | grep -vE '<author |^--$' | grep -oE '<(\w+) ?' | sort | uniq
-   <article
-   <author
-   <book
-   <cdrom
-   <crossref
-   <editor
-   <ee
-   <ee
-   <incollection
-   <inproceedings
-   <mastersthesis
-   <note
-   <phdthesis
-   <proceedings
-   <sub
-   <sup
-   <title
-   <url
-   <www
-   
-   ```
+```
+prajwalkk@PRAJWALKK:~$ grep -B1 '<author>' dblp.xml | grep -vE '<author |^--$' | grep -oE '<(\w+) ?' | sort | uniq
+<article
+<author
+<book
+<cdrom
+<crossref
+<editor
+<ee
+<ee
+<incollection
+<inproceedings
+<mastersthesis
+<note
+<phdthesis
+<proceedings
+<sub
+<sup
+<title
+<url
+<www
+```
 
-   We only need these tags that specify publications `article|inproceedings|proceedings|book|incollection|phdthesis|mastersthesis|www|person|data`
+We only need these tags that specify publications `article|inproceedings|proceedings|book|incollection|phdthesis|mastersthesis|www|person|data`
 
 ### Some observations and assumptions
 
