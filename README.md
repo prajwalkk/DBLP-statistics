@@ -7,7 +7,7 @@
 ### Overview
 
 1. The objective of this homework was to process the [DBLP](https://dblp.uni-trier.de/) dataset using **Hadoop Map-Reduce framework** to find out various statistics. Each Job is named appropriately like: Job1, Job2, Job3, Job4, Job5
-2. EMR Link: https://youtu.be/ou1ybwYI7Ec
+2. EMR Deployment Link: https://youtu.be/ou1ybwYI7Ec
 
 ### Instructions
 
@@ -63,8 +63,8 @@ if the system has WSL, do. Else, delete that like in SBT file.
 
    ```
    hdfs dfs -mkdir -p /user/maria_dev/Input/
-
    hdfs dfs -put dblp.xml /user/maria_dev/Input/
+   
    ```
 
 specify whatever input directory you wish
@@ -83,36 +83,37 @@ These were basic shell scripts to make sense of the XML
 
 1. Number of authors and editors. Just a ballpark. No filtering
 
-   ```
-   prajwalkk@PRAJWALKK:~$ grep --count '<author' dblp.xml
-   18716385
-   prajwalkk@PRAJWALKK:~$ grep --count '<editor' dblp.xml
-   113016
-   ```
+```
+prajwalkk@PRAJWALKK:~$ grep --count '<author' dblp.xml
+18716385
+prajwalkk@PRAJWALKK:~$ grep --count '<editor' dblp.xml
+113016
+```
 
 2. Check the tags that precede `<author>` tag
-   ```
-   prajwalkk@PRAJWALKK:~$ grep -B1 '<author>' dblp.xml | grep -vE '<author |^--$' | grep -oE '<(\w+) ?' | sort | uniq
-   <article
-   <author
-   <book
-   <cdrom
-   <crossref
-   <editor
-   <ee
-   <ee
-   <incollection
-   <inproceedings
-   <mastersthesis
-   <note
-   <phdthesis
-   <proceedings
-   <sub
-   <sup
-   <title
-   <url
-   <www
-   ```
+   
+	```
+	prajwalkk@PRAJWALKK:~$ grep -B1 '<author>' dblp.xml | grep -vE '<author |^--$' | grep -oE '<(\w+) ?' | sort | uniq
+	<article
+	<author
+	<book
+	<cdrom
+	<crossref
+	<editor
+	<ee
+	<ee
+	<incollection
+	<inproceedings
+	<mastersthesis
+	<note
+	<phdthesis
+	<proceedings
+	<sub
+	<sup
+	<title
+	<url
+	<www
+	```
 3. Editors also can be considered as author. Looking at the tags that precede editor
 
    ```
@@ -136,6 +137,7 @@ These were basic shell scripts to make sense of the XML
    <title
    <url
    <www
+   
    ```
 
    We only need these tags that specify publications `article|inproceedings|proceedings|book|incollection|phdthesis|mastersthesis|www|person|data`
