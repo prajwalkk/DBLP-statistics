@@ -10,6 +10,8 @@ import org.apache.hadoop.mapreduce.lib.input.{FileInputFormat, TextInputFormat}
 import org.apache.hadoop.mapreduce.lib.output.{FileOutputFormat, TextOutputFormat}
 import org.apache.hadoop.mapreduce.{Job, Mapper, Reducer}
 
+import scala.sys.process._
+
 /*
 *
 * Created by: prajw
@@ -50,14 +52,18 @@ object SortingJob extends LazyLogging {
     if (job.waitForCompletion(true)) {
       logger.info("Sorting Done")
       // Get the sorted files
-      //      val a = Seq("hdfs", "dfs", "-getmerge", s"${output}${jobName}/*", "./Sortedpgm.csv").!!
-      //      // Get top 100
-      //      val b = Seq("head", "-n100", "./Sortedpgm.csv", ">", "Mapred_5_Top_100.csv").!!
-      //      //get least 100
-      //      val c = Seq("grep", "-E", "',0$'", "Sortedpgm.csv", "-m100", "-h", ">", "./Mapred_5_Bottom_100.csv").!!
-      //      val d = Seq("hdfs", "dfs", "-put", "./Sortedpgm.csv", output + jobName + "/" + "FinalOP/").!!
-      //      val e = Seq("hdfs", "dfs", "-put", "./Mapred_5_Bottom_100.csv", output + jobName + "/" + "FinalOP/").!!
-      //      logger.info(s"Status = $a $b $c $d $e")
+      try {
+        Seq("hdfs", "dfs", "-getmerge", s"$outputPath*", "./sorted_pgm.csv").!!
+        // Get top 100
+        Seq("head", "-n100", "./sorted_pgm.csv", ">", "./mapred_5_top_100.csv").!!
+        //get least 100
+        Seq("grep", """',0$'""", "./sorted_pgm.csv", "-m100", ">", "./mapred_5_bottom_100.csv").!!
+        Seq("hdfs", "dfs", "-mkdir", "-p", outputPath + "FinalOP/").!!
+        Seq("hdfs", "dfs", "-put", "./sorted_pgm.csv", outputPath + "FinalOP/").!!
+        Seq("hdfs", "dfs", "-put", "./mapred_5_bottom_100.csv", outputPath + "FinalOP/").!!
+      } catch {
+        case _: Throwable => logger.error("Something wrong with writing of final files. Do it yourself.")
+      }
     }
     else
       logger.error("Sorting Did not complete")

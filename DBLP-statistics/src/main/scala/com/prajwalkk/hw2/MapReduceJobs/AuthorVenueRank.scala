@@ -15,7 +15,7 @@ import org.apache.hadoop.mapreduce.lib.output.{FileOutputFormat, TextOutputForma
 import org.apache.hadoop.mapreduce.{Job, Mapper, Reducer}
 
 import scala.jdk.CollectionConverters.IterableHasAsScala
-import scala.sys.process.stringSeqToProcess
+import scala.sys.process._
 
 /*
 *
@@ -67,10 +67,15 @@ object AuthorVenueRank extends LazyLogging {
 
     if (job.waitForCompletion(true)) {
       logger.info(s"Success on ${jobName}")
-      val a = Seq("hdfs", "dfs", "-getmerge", s"${output}${jobName}/*", "./top10AuthorsPerVenue_Job1.csv").!!
-      val b = Seq("hdfs", "dfs", "-mkdir", "-p", outputDir+"FinalOP/").!!
-      val c = Seq("hdfs", "dfs", "-put" ,"./top10AuthorsPerVenue_Job1.csv", outputDir+"FinalOP/").!!
-      logger.info(s"Status $a $b $c")
+
+      try {
+        Seq("hdfs", "dfs", "-getmerge", s"${outputDir}*", "./top_10_authors_per_venue_job1.csv").!!
+        Seq("hdfs", "dfs", "-mkdir", "-p", outputDir + "FinalOP/").!!
+        Seq("hdfs", "dfs", "-put", "./top_10_authors_per_venue_job1.csv", outputDir + "FinalOP/").!!
+      }catch {
+        case _: Throwable => logger.error("Something wrong with writing of final files. Do it yourself.")
+      }
+      logger.info(s"Executed commands")
     }
     else logger.error(s"Failed on ${jobName}")
   }

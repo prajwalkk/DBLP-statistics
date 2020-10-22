@@ -69,10 +69,13 @@ object VenueSingleAuthor extends LazyLogging {
 
     if (job.waitForCompletion(true)) {
       logger.info(s"Success on ${jobName}")
-      val a = Seq("hdfs", "dfs", "-getmerge", s"${output}${jobName}/*", "./SingleAuthorsPerVenue_Job3.csv").!!
-      val b = Seq("hdfs", "dfs", "-mkdir", "-p", outputDir+"FinalOP/").!!
-      val c = Seq("hdfs", "dfs", "-put" ,"./SingleAuthorsPerVenue_Job3.csv", outputDir+"FinalOP/").!!
-      logger.info(s"Status $a $b $c")
+      try {
+        Seq("hdfs", "dfs", "-getmerge", s"${outputDir}*", "./single_authors_per_venue_job3.csv").!!
+        Seq("hdfs", "dfs", "-mkdir", "-p", outputDir + "FinalOP/").!!
+        Seq("hdfs", "dfs", "-put", "./single_authors_per_venue_job3.csv", outputDir + "FinalOP/").!!
+      } catch {
+        case _: Throwable => logger.error("Error writing the final output. Do it yourself")
+      }
     }
     else logger.error(s"Failed on ${jobName}")
   }

@@ -31,7 +31,7 @@ object VenueHighestAuthors extends LazyLogging {
    *
    * @param configTypesafe
    */
-  def runJob(input: String, output: String,configTypesafe: Config) = {
+  def runJob(input: String, output: String, configTypesafe: Config) = {
 
 
     val outputSeperator = configTypesafe.getString(Constants.SEPERATOR)
@@ -70,10 +70,13 @@ object VenueHighestAuthors extends LazyLogging {
     if (job.waitForCompletion(true)) {
       logger.info(s"Success on ${jobName}")
       // Get the sorted files
-      val a = Seq("hdfs", "dfs", "-getmerge", s"${output}${jobName}/*", "./HighestAuthorsPerVenue_Job4.csv").!!
-      val b = Seq("hdfs", "dfs", "-mkdir", "-p", outputDir+"FinalOP/").!!
-      val c = Seq("hdfs", "dfs", "-put" ,"./HighestAuthorsPerVenue_Job4.csv", outputDir+"FinalOP/").!!
-      logger.info(s"Status $a $b $c")
+      try {
+        Seq("hdfs", "dfs", "-getmerge", s"$outputDir*", "./highest_authors_per_venue_job4.csv").!!
+        Seq("hdfs", "dfs", "-mkdir", "-p", outputDir + "FinalOP/").!!
+        Seq("hdfs", "dfs", "-put", "./highest_authors_per_venue_job4.csv", outputDir + "FinalOP/").!!
+      } catch {
+        case _: Throwable => logger.error("Some error while writing final output. Do it yourself")
+      }
     }
     else
       logger.info(s"Failed on ${jobName}")
@@ -122,7 +125,7 @@ object VenueHighestAuthors extends LazyLogging {
 
       val stringArray = values.asScala.map(value => value.toString)
 
-      try{
+      try {
         val authorCounts = convertListToMap(stringArray)
         // val (maxPublicaton, maxAuthorNumber) = authorCounts.maxBy(_._2)
         // Handles multiple max author. No TieBreaker needed.
@@ -134,8 +137,8 @@ object VenueHighestAuthors extends LazyLogging {
         }.toList.mkString(",")
         logger.info(s"${key.toString} -> $maxMapString")
         context.write(key, new Text(maxMapString))
-      }catch {
-        case matchError: MatchError => logger.error(s"Bad title: Skipping + ${matchError.getMessage()}")
+      } catch {
+        case _: Throwable => logger.error(s"Bad title: Skipping")
       }
     }
   }

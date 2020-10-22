@@ -71,10 +71,14 @@ object ContinuousAuthor extends LazyLogging {
 
     if (job.waitForCompletion(true)) {
       logger.info(s"Success on ${jobName}")
-      val a = Seq("hdfs", "dfs", "-getmerge", s"${output}${jobName}/*", "./Continuous_N_Author_Job2.csv").!!
-      val b = Seq("hdfs", "dfs", "-mkdir", "-p", outputDir + "FinalOP/").!!
-      val c = Seq("hdfs", "dfs", "-put", "./Continuous_N_Author_Job2.csv", outputDir + "FinalOP/").!!
-      logger.info(s"Status $a $b $c")
+      try {
+        Seq("hdfs", "dfs", "-getmerge", s"$outputDir*", "./continuous_n_author_job2.csv").!!
+        Seq("hdfs", "dfs", "-mkdir", "-p", outputDir + "FinalOP/").!!
+        Seq("hdfs", "dfs", "-put", "./continuous_n_author_job2.csv", outputDir + "FinalOP/").!!
+      } catch {
+        case _ : Throwable => logger.error("Something wrong with writing of final files. Do it yourself.")
+      }
+
     }
     else logger.error(s"Failed on ${jobName}")
   }
