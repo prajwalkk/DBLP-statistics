@@ -9,11 +9,12 @@ import scala.io.{BufferedSource, Source}
 
 /*
 *
+* Unused. Will be made used off in the future instead of Unix commands
 * Created by: prajw
 * Date: 18-Oct-20
 *
 */
-object HdfsIoUtils extends LazyLogging{
+object HdfsIoUtils extends LazyLogging {
   def writeToHDFS(output: String, csvFile: String, content: ArrayBuffer[String]) = {
     val fs = FileSystem.get(new Configuration)
     val hdfsPath = new Path(output + Path.SEPARATOR + csvFile + ".csv")

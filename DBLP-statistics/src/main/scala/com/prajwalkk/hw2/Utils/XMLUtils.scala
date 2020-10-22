@@ -31,7 +31,7 @@ object XMLUtils extends LazyLogging {
       .replaceAll("[^\\x00-\\x7F]", "")
     val xmlString =
       s"""<?xml version="1.0" encoding="ISO-8859-1"?><!DOCTYPE dblp SYSTEM "$dtdFilePath"><dblp>${publicationString}</dblp>"""
-    logger.info(s"xmlString = $xmlString")
+    logger.debug(s"xmlString = $xmlString")
     XML.withSAXParser(xmlParser).loadString(xmlString)
   }
 
@@ -83,7 +83,7 @@ object XMLUtils extends LazyLogging {
   }
 
   /**
-   * Extract publication title 
+   * Extract publication title
    *
    * @param str
    * @return
