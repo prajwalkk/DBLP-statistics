@@ -30,14 +30,14 @@ The project was developed using the following environment:
 #### Running the map reduce job
 
 1. Clone this repository
-2. Browse to the project directory
+2. Browse to the project directory. The code files are in the DBLP-statistics folder. Import that folder in intelliJ
 3. Generate the fat jar file using SBT on shell / cmd
 
 ```
 sbt clean compile assembly
 ```
 
-if the system has WSL, do. Else, delete that like in SBT file.
+if the system has WSL, do this to copy files to WSL else do not do it.
 `sbt deploy`
 
 4. Start HDP sandbox VM
